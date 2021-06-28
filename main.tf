@@ -1,130 +1,29 @@
-######################
-#  Lambda
-######################
-
-data "archive_file" "metrics_lambda" {
-  type        = "zip"
-  source_file = "${path.module}/metrics_logger.py"
-  output_path = "${path.module}/metrics_logger.zip"
+provider "aws" {
+  region = "us-east-1"
 }
 
-resource "aws_cloudwatch_log_group" "metrics" {
-  name              = "/aws/lambda/${aws_lambda_function.metrics_logger.id}"
-  retention_in_days = 14
-}
+terraform {
+  required_version = ">= 1.0.0"
 
-resource "aws_lambda_function" "metrics_logger" {
-  function_name                  = "metrics-logger"
-  filename                       = data.archive_file.metrics_lambda.output_path
-  handler                        = "metrics_logger.lambda_handler"
-  role                           = aws_iam_role.metrics_logger.arn
-  reserved_concurrent_executions = 1
-  source_code_hash               = data.archive_file.metrics_lambda.output_base64sha256
-  runtime                        = "python3.8"
-  timeout                        = 30
-
-  environment {
-    variables = {
-      DYNAMO_TABLE = aws_dynamodb_table.metrics.name
+  required_providers {
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.2"
+    }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 3.47"
     }
   }
 
-  tags = {
-    Name = "bmlt-metrics"
-  }
-
-  lifecycle {
-    ignore_changes = [
-      last_modified
-    ]
+  backend "s3" {
+    bucket         = "mvana-account-terraform"
+    region         = "us-east-1"
+    dynamodb_table = "mvana-account-terraform"
+    key            = "bmlt-metrics/terraform.tfstate"
   }
 }
 
-resource "aws_lambda_permission" "bmlt_metrics_cloudwatch" {
-  statement_id  = "bmlt-metrics-cloudwatch-permission"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.metrics_logger.arn
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.bmlt_metrics.arn
-}
-
-data "aws_iam_policy_document" "metrics_logger_assume_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "metrics_logger" {
-  name               = "metrics-logger"
-  description        = "For metrics logger Lambda"
-  assume_role_policy = data.aws_iam_policy_document.metrics_logger_assume_role.json
-  tags = {
-    Name = "bmlt-metrics"
-  }
-}
-
-resource "aws_iam_policy" "metrics_logger_policy" {
-  name   = "metrics-logger-lambda-role"
-  policy = data.aws_iam_policy_document.metrics_logger_policy.json
-}
-
-resource "aws_iam_role_policy_attachment" "metrics_logger_policy_attachment" {
-  role       = aws_iam_role.metrics_logger.name
-  policy_arn = aws_iam_policy.metrics_logger_policy.arn
-}
-
-data "aws_iam_policy_document" "metrics_logger_policy" {
-  statement {
-    effect    = "Allow"
-    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
-    resources = ["${aws_cloudwatch_log_group.metrics.arn}:*"]
-  }
-
-  statement {
-    effect    = "Allow"
-    actions   = ["DynamoDB:PutItem"]
-    resources = [aws_dynamodb_table.metrics.arn]
-  }
-}
-
-######################
-#  Dynamo
-######################
-
-resource "aws_dynamodb_table" "metrics" {
-  name           = "metrics-logger"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "date"
-
-  attribute {
-    name = "date"
-    type = "S"
-  }
-
-  tags = {
-    Name = "bmlt-metrics"
-  }
-}
-
-######################
-#  Cloudwatch
-######################
-
-resource "aws_cloudwatch_event_rule" "bmlt_metrics" {
-  name                = "bmlt-metrics-lambda"
-  description         = "bmlt-metrics-lambda-daily-12-am"
-  schedule_expression = "cron(0 0 ? * * *)"
-}
-
-resource "aws_cloudwatch_event_target" "bmlt_metrics_target" {
-  target_id = "bmlt-metrics-lambda-target"
-  rule      = aws_cloudwatch_event_rule.bmlt_metrics.name
-  arn       = aws_lambda_function.metrics_logger.arn
+output "base_url" {
+  value = aws_api_gateway_deployment.metrics.invoke_url
 }
