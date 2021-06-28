@@ -16,8 +16,11 @@ data "aws_iam_policy_document" "metrics_api_assume_role" {
 
 data "aws_iam_policy_document" "metrics_api" {
   statement {
-    effect    = "Allow"
-    actions   = ["dynamodb:Query"]
+    effect = "Allow"
+    actions = [
+      "dynamodb:Query",
+      "dynamodb:Scan"
+    ]
     resources = [aws_dynamodb_table.metrics.arn]
   }
 
