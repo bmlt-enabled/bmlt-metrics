@@ -42,10 +42,9 @@ def api_handler(event, context):
     if not path.startswith("/metrics"):
         print("bad path")
         return bad_response
+    fe = Key('date').between('2021-06-27', '2021-06-28')
+    response = table.scan(FilterExpression=fe)
 
-    response = table.query(
-        KeyConditionExpression=Key('date').eq('2021-06-27')
-    )
     return {
         "statusCode": 200,
         "headers": {"content-type": "application/json"},
