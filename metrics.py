@@ -40,11 +40,14 @@ def logger_handler(event, context):
 
 
 def api_handler(event, context):
-    print(event)
+    print(json.dumps(event))
     path = event.get("path")
     if not path.startswith("/metrics"):
         return bad_response("bad path")
-    fe = Key('date').between('2021-06-27', current_date)
+    params = event.get("queryStringParameters")
+    start_date = params.get("start_date") if params and params.get("start_date") else "2021-06-27"
+    end_date = params.get("end_date") if params and params.get("end_date") else current_date
+    fe = Key('date').between(start_date, end_date)
     response = table.scan(FilterExpression=fe)
 
     return {
