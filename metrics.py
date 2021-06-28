@@ -42,7 +42,7 @@ def api_handler(event, context):
     if not path.startswith("/metrics"):
         print("bad path")
         return bad_response
-    fe = Key('date').between('2021-06-27', '2021-06-28')
+    fe = Key('date').between('2021-06-27', current_date)
     response = table.scan(FilterExpression=fe)
 
     return {
