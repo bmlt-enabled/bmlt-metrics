@@ -12,7 +12,12 @@ current_date = datetime.today().strftime('%Y-%m-%d')
 def bad_response(message):
     return {
         "statusCode": 403,
-        "headers": {"content-type": "application/json"},
+        "headers": {
+                    "content-type": "application/json",
+                    "Access-Control-Allow-Headers": "Content-Type",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
+                },
         "body": json.dumps({"error_response": message})
     }
 
@@ -52,6 +57,11 @@ def api_handler(event, context):
 
     return {
         "statusCode": 200,
-        "headers": {"content-type": "application/json"},
+        "headers": {
+            "content-type": "application/json",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
+        },
         "body": json.dumps(response['Items'])
     }
