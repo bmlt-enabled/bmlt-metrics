@@ -104,8 +104,8 @@
                 dataType: "json",
                 type: "GET",
                 "dataSrc": function (json) {
-                    var meeting_data = [];
-                    for(var i=0;i< json.length; i++){
+                    let meeting_data = [];
+                    for(let i=0;i< json.length; i++){
                         meeting_data.push({
                             'date' : json[i].date,
                             'num_meetings' : json[i].num_meetings,
@@ -119,14 +119,20 @@
                     let trace1 = {
                         x: [],
                         y: [],
-                        mode: "lines"
+                        mode: "lines",
+                        name: 'Meetings'
+                    };
+
+                    let layout = {
+                        title: 'Total Meetings in Tomato',
+                        showlegend: true
                     };
 
                     json.forEach(function(val) {
                         trace1.x.push(val["date"]);
                         trace1.y.push(val["num_meetings"]);
                     });
-                    Plotly.newPlot('plot', [trace1]);
+                    Plotly.newPlot('plot', [trace1], layout, {scrollZoom: true});
 
                     return meeting_data;
                 }
