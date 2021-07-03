@@ -80,8 +80,10 @@
         </thead>
     </table>
 </div>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<div id="plot" style="width:90%;height:250px;"></div>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
 
     $(document).ready(function() {
@@ -100,8 +102,7 @@
             "ajax": {
                 url: "https://api.metrics.bmltenabled.org/metrics",
                 dataType: "json",
-                type: "POST",
-                contentType: "application/json; charset=utf-8",
+                type: "GET",
                 "dataSrc": function (json) {
                     var meeting_data = [];
                     for(var i=0;i< json.length; i++){
@@ -114,6 +115,19 @@
                             'num_zones': json[i].num_zones
                         })
                     }
+
+                    let trace1 = {
+                        x: [],
+                        y: [],
+                        mode: "lines"
+                    };
+
+                    json.forEach(function(val) {
+                        trace1.x.push(val["date"]);
+                        trace1.y.push(val["num_meetings"]);
+                    });
+                    Plotly.newPlot('plot', [trace1]);
+
                     return meeting_data;
                 }
             },
