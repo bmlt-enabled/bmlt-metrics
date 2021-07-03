@@ -13,18 +13,19 @@ def bad_response(message):
     return {
         "statusCode": 403,
         "headers": {
-                    "content-type": "application/json",
-                    "Access-Control-Allow-Headers": "Content-Type",
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
-                },
+            "content-type": "application/json",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
+        },
         "body": json.dumps({"error_response": message})
     }
 
 
 def logger_handler(event, context):
     num_zones = num_regions = num_areas = num_meetings = num_groups = 0
-    req = urllib3.PoolManager().request("GET", 'https://tomato.bmltenabled.org/rest/v1/rootservers/')
+    req = urllib3.PoolManager().request(
+        "GET", 'https://tomato.bmltenabled.org/rest/v1/rootservers/')
     root_servers = json.loads(req.data.decode())
 
     for root in root_servers:
@@ -50,10 +51,13 @@ def api_handler(event, context):
     if not path.startswith("/metrics"):
         return bad_response("bad path")
     params = event.get("queryStringParameters")
-    start_date = params.get("start_date") if params and params.get("start_date") else "2021-06-27"
-    end_date = params.get("end_date") if params and params.get("end_date") else current_date
+    start_date = params.get("start_date") if params and params.get(
+        "start_date") else "2021-06-27"
+    end_date = params.get("end_date") if params and params.get(
+        "end_date") else current_date
     fe = Key('date').between(start_date, end_date)
     response = table.scan(FilterExpression=fe)
+    sorted_response = sorted(response['Items'], key=lambda k: k['date'])
 
     return {
         "statusCode": 200,
@@ -63,5 +67,5 @@ def api_handler(event, context):
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
         },
-        "body": json.dumps(response['Items'])
+        "body": json.dumps(sorted_response)
     }
