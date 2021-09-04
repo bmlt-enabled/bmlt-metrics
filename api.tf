@@ -57,123 +57,123 @@ resource "aws_iam_role" "metrics_api_role" {
   ]
 }
 
-resource "aws_security_group" "metrics" {
-  name   = "metrics_api"
-  vpc_id = "vpc-0b06abcc49c87c31f"
+#resource "aws_security_group" "metrics" {
+#  name   = "metrics_api"
+#  vpc_id = "vpc-0dfcb118ca0c0e124"
+#
+#  egress {
+#    from_port   = 443
+#    to_port     = 443
+#    protocol    = "tcp"
+#    cidr_blocks = ["0.0.0.0/0"]
+#  }
+#}
 
-  egress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
+#resource "aws_cloudwatch_log_group" "metrics_api" {
+#  name              = "/aws/lambda/${aws_lambda_function.metrics_api.id}"
+#  retention_in_days = 14
+#}
 
-resource "aws_cloudwatch_log_group" "metrics_api" {
-  name              = "/aws/lambda/${aws_lambda_function.metrics_api.id}"
-  retention_in_days = 14
-}
-
-resource "aws_lambda_function" "metrics_api" {
-  function_name    = "metrics_api"
-  filename         = data.archive_file.metrics_lambda.output_path
-  source_code_hash = data.archive_file.metrics_lambda.output_base64sha256
-  handler          = "metrics.api_handler"
-  runtime          = "python3.8"
-  role             = aws_iam_role.metrics_api_role.arn
-
-  environment {
-    variables = {
-      DYNAMO_TABLE = aws_dynamodb_table.metrics.name
-    }
-  }
-
-  vpc_config {
-    security_group_ids = [aws_security_group.metrics.id]
-    subnet_ids         = ["subnet-08cea9c9b1562577a", "subnet-0610d9d763aa86fad"]
-  }
-
-  tags = {
-    Name = "bmlt-metrics-api"
-  }
-
-  lifecycle {
-    ignore_changes = [
-      last_modified
-    ]
-  }
-}
+#resource "aws_lambda_function" "metrics_api" {
+#  function_name    = "metrics_api"
+#  filename         = data.archive_file.metrics_lambda.output_path
+#  source_code_hash = data.archive_file.metrics_lambda.output_base64sha256
+#  handler          = "metrics.api_handler"
+#  runtime          = "python3.8"
+#  role             = aws_iam_role.metrics_api_role.arn
+#
+#  environment {
+#    variables = {
+#      DYNAMO_TABLE = aws_dynamodb_table.metrics.name
+#    }
+#  }
+#
+#  vpc_config {
+#    security_group_ids = [aws_security_group.metrics.id]
+#    subnet_ids         = ["subnet-08cea9c9b1562577a", "subnet-0610d9d763aa86fad"]
+#  }
+#
+#  tags = {
+#    Name = "bmlt-metrics-api"
+#  }
+#
+#  lifecycle {
+#    ignore_changes = [
+#      last_modified
+#    ]
+#  }
+#}
 
 ######################
 #  API Gateway
 ######################
 
-resource "aws_api_gateway_rest_api" "metrics_api" {
-  name        = "metrics_api"
-  description = "metrics_api"
+#resource "aws_api_gateway_rest_api" "metrics_api" {
+#  name        = "metrics_api"
+#  description = "metrics_api"
+#
+#  endpoint_configuration {
+#    types = ["REGIONAL"]
+#  }
+#}
 
-  endpoint_configuration {
-    types = ["REGIONAL"]
-  }
-}
+#resource "aws_api_gateway_resource" "proxy" {
+#  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
+#  parent_id   = aws_api_gateway_rest_api.metrics_api.root_resource_id
+#  path_part   = "{proxy+}"
+#}
 
-resource "aws_api_gateway_resource" "proxy" {
-  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
-  parent_id   = aws_api_gateway_rest_api.metrics_api.root_resource_id
-  path_part   = "{proxy+}"
-}
+#resource "aws_api_gateway_method" "proxy" {
+#  rest_api_id   = aws_api_gateway_rest_api.metrics_api.id
+#  resource_id   = aws_api_gateway_resource.proxy.id
+#  http_method   = "ANY"
+#  authorization = "NONE"
+#}
 
-resource "aws_api_gateway_method" "proxy" {
-  rest_api_id   = aws_api_gateway_rest_api.metrics_api.id
-  resource_id   = aws_api_gateway_resource.proxy.id
-  http_method   = "ANY"
-  authorization = "NONE"
-}
+#resource "aws_api_gateway_integration" "lambda" {
+#  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
+#  resource_id = aws_api_gateway_method.proxy.resource_id
+#  http_method = aws_api_gateway_method.proxy.http_method
+#
+#  integration_http_method = "POST"
+#  type                    = "AWS_PROXY"
+#  uri                     = aws_lambda_function.metrics_api.invoke_arn
+#}
 
-resource "aws_api_gateway_integration" "lambda" {
-  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
-  resource_id = aws_api_gateway_method.proxy.resource_id
-  http_method = aws_api_gateway_method.proxy.http_method
+#resource "aws_api_gateway_method" "proxy_root" {
+#  rest_api_id   = aws_api_gateway_rest_api.metrics_api.id
+#  resource_id   = aws_api_gateway_rest_api.metrics_api.root_resource_id
+#  http_method   = "ANY"
+#  authorization = "NONE"
+#}
 
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.metrics_api.invoke_arn
-}
+#resource "aws_api_gateway_integration" "lambda_root" {
+#  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
+#  resource_id = aws_api_gateway_method.proxy_root.resource_id
+#  http_method = aws_api_gateway_method.proxy_root.http_method
+#
+#  integration_http_method = "POST"
+#  type                    = "AWS_PROXY"
+#  uri                     = aws_lambda_function.metrics_api.invoke_arn
+#}
 
-resource "aws_api_gateway_method" "proxy_root" {
-  rest_api_id   = aws_api_gateway_rest_api.metrics_api.id
-  resource_id   = aws_api_gateway_rest_api.metrics_api.root_resource_id
-  http_method   = "ANY"
-  authorization = "NONE"
-}
+#resource "aws_api_gateway_deployment" "metrics" {
+#  depends_on = [
+#    aws_api_gateway_integration.lambda,
+#    aws_api_gateway_integration.lambda_root,
+#  ]
+#
+#  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
+#  stage_name  = "testing"
+#}
 
-resource "aws_api_gateway_integration" "lambda_root" {
-  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
-  resource_id = aws_api_gateway_method.proxy_root.resource_id
-  http_method = aws_api_gateway_method.proxy_root.http_method
-
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.metrics_api.invoke_arn
-}
-
-resource "aws_api_gateway_deployment" "metrics" {
-  depends_on = [
-    aws_api_gateway_integration.lambda,
-    aws_api_gateway_integration.lambda_root,
-  ]
-
-  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
-  stage_name  = "testing"
-}
-
-resource "aws_lambda_permission" "metrics_api" {
-  statement_id  = "AllowMetricsAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.metrics_api.arn
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.metrics_api.execution_arn}/*/*/*"
-}
+#resource "aws_lambda_permission" "metrics_api" {
+#  statement_id  = "AllowMetricsAPIGatewayInvoke"
+#  action        = "lambda:InvokeFunction"
+#  function_name = aws_lambda_function.metrics_api.arn
+#  principal     = "apigateway.amazonaws.com"
+#  source_arn    = "${aws_api_gateway_rest_api.metrics_api.execution_arn}/*/*/*"
+#}
 
 data "aws_route53_zone" "metrics" {
   name = "metrics.bmltenabled.org."
@@ -227,8 +227,8 @@ resource "aws_api_gateway_domain_name" "metrics" {
   }
 }
 
-resource "aws_api_gateway_base_path_mapping" "metrics" {
-  api_id      = aws_api_gateway_rest_api.metrics_api.id
-  stage_name  = aws_api_gateway_deployment.metrics.stage_name
-  domain_name = aws_api_gateway_domain_name.metrics.domain_name
-}
+#resource "aws_api_gateway_base_path_mapping" "metrics" {
+#  api_id      = aws_api_gateway_rest_api.metrics_api.id
+#  stage_name  = aws_api_gateway_deployment.metrics.stage_name
+#  domain_name = aws_api_gateway_domain_name.metrics.domain_name
+#}
