@@ -66,6 +66,9 @@ resource "aws_api_gateway_resource" "metrics" {
   path_part   = "metrics"
 }
 
+######################
+#  GET
+######################
 resource "aws_api_gateway_method" "metrics_get" {
   rest_api_id   = aws_api_gateway_rest_api.metrics_api.id
   resource_id   = aws_api_gateway_resource.metrics.id
@@ -118,6 +121,10 @@ resource "aws_api_gateway_method_response" "metrics_get_200" {
   resource_id = aws_api_gateway_resource.metrics.id
   http_method = aws_api_gateway_method.metrics_get.http_method
   status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = false
+  }
 }
 
 resource "aws_api_gateway_integration_response" "metrics_get" {
@@ -126,7 +133,10 @@ resource "aws_api_gateway_integration_response" "metrics_get" {
   http_method = aws_api_gateway_method.metrics_get.http_method
   status_code = aws_api_gateway_method_response.metrics_get_200.status_code
 
-  # Transforms the backend JSON response to XML
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = "'*'"
+  }
+
   response_templates = {
     "application/json" = <<EOF
 #set($inputRoot = $input.path('$'))
@@ -148,16 +158,83 @@ EOF
   }
 }
 
+######################
+#  OPTIONS
+######################
+resource "aws_api_gateway_method" "metrics_options" {
+  rest_api_id   = aws_api_gateway_rest_api.metrics_api.id
+  resource_id   = aws_api_gateway_resource.metrics.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "metrics_options" {
+  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
+  resource_id = aws_api_gateway_resource.metrics.id
+  http_method = aws_api_gateway_method.metrics_options.http_method
+  type        = "MOCK"
+  request_templates = {
+    "application/json" = jsonencode({
+      statusCode = 200
+    })
+  }
+}
+
+resource "aws_api_gateway_method_response" "metrics_options" {
+  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
+  resource_id = aws_api_gateway_resource.metrics.id
+  http_method = aws_api_gateway_method.metrics_options.http_method
+
+  status_code = "200"
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "metrics_options" {
+  rest_api_id = aws_api_gateway_rest_api.metrics_api.id
+  resource_id = aws_api_gateway_method.metrics_options.resource_id
+  http_method = aws_api_gateway_method.metrics_options.http_method
+
+  status_code = aws_api_gateway_method_response.metrics_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,GET'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+
+######################
+#  Deployment
+######################
 resource "aws_api_gateway_deployment" "metrics" {
   depends_on = [
+    aws_api_gateway_method.metrics_get,
     aws_api_gateway_integration.metrics_get,
+    aws_api_gateway_method_response.metrics_get_200,
     aws_api_gateway_integration_response.metrics_get,
+    aws_api_gateway_method.metrics_options,
+    aws_api_gateway_integration.metrics_options,
+    aws_api_gateway_method_response.metrics_options,
+    aws_api_gateway_integration_response.metrics_options,
   ]
 
   rest_api_id = aws_api_gateway_rest_api.metrics_api.id
   stage_name  = "testing"
 }
 
+######################
+#  DNS and Certs
+######################
 data "aws_route53_zone" "metrics" {
   name = "metrics.bmltenabled.org."
 }
