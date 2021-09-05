@@ -33,11 +33,6 @@ resource "aws_lambda_function" "metrics_logger" {
     Name = "bmlt-metrics-logging"
   }
 
-  vpc_config {
-    security_group_ids = [aws_security_group.metrics.id]
-    subnet_ids         = ["subnet-0e12115224317f560", "subnet-08e2bf275fdf3387e"]
-  }
-
   lifecycle {
     ignore_changes = [
       last_modified
@@ -95,18 +90,6 @@ data "aws_iam_policy_document" "metrics_logger_policy" {
     effect    = "Allow"
     actions   = ["DynamoDB:PutItem"]
     resources = [aws_dynamodb_table.metrics.arn]
-  }
-
-  statement {
-    effect = "Allow"
-    actions = [
-      "ec2:CreateNetworkInterface",
-      "ec2:DescribeNetworkInterfaces",
-      "ec2:DeleteNetworkInterface",
-      "ec2:AssignPrivateIpAddresses",
-      "ec2:UnassignPrivateIpAddresses"
-    ]
-    resources = ["*"]
   }
 }
 
