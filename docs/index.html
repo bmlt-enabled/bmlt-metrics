@@ -85,7 +85,7 @@
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-
+    const currentDate = new Date()
     $(document).ready(function() {
         $('#meetings').DataTable( {
             "columnDefs": [
@@ -101,6 +101,10 @@
             "scrollCollapse": true,
             "ajax": {
                 url: "https://api.metrics.bmltenabled.org/metrics",
+                data: {
+                    'start_date' : '2021-06-28',
+                    'end_date' : currentDate.toISOString().split('T')[0],
+                },
                 dataType: "json",
                 type: "GET",
                 "dataSrc": function (json) {
