@@ -35,7 +35,7 @@ resource "aws_lambda_function" "metrics_logger" {
 
   vpc_config {
     security_group_ids = [aws_security_group.metrics.id]
-    subnet_ids         = ["subnet-08cea9c9b1562577a", "subnet-0610d9d763aa86fad"]
+    subnet_ids         = ["subnet-0e12115224317f560", "subnet-08e2bf275fdf3387e"]
   }
 
   lifecycle {

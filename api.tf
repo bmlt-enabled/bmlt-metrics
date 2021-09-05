@@ -59,7 +59,7 @@ resource "aws_iam_role" "metrics_api_role" {
 
 resource "aws_security_group" "metrics" {
   name   = "metrics_api"
-  vpc_id = "vpc-0b06abcc49c87c31f"
+  vpc_id = "vpc-0dfcb118ca0c0e124"
 
   egress {
     from_port   = 443
@@ -90,7 +90,7 @@ resource "aws_lambda_function" "metrics_api" {
 
   vpc_config {
     security_group_ids = [aws_security_group.metrics.id]
-    subnet_ids         = ["subnet-08cea9c9b1562577a", "subnet-0610d9d763aa86fad"]
+    subnet_ids         = ["subnet-0e12115224317f560", "subnet-08e2bf275fdf3387e"] # tomato priv
   }
 
   tags = {
