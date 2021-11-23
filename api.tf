@@ -236,11 +236,11 @@ resource "aws_api_gateway_deployment" "metrics" {
 #  DNS and Certs
 ######################
 data "aws_route53_zone" "metrics" {
-  name = "metrics.bmltenabled.org."
+  name = "api.bmltenabled.org."
 }
 
 resource "aws_acm_certificate" "tz" {
-  domain_name       = "api.metrics.bmltenabled.org"
+  domain_name       = "metrics.api.bmltenabled.org"
   validation_method = "DNS"
 }
 
