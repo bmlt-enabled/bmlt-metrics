@@ -40,7 +40,6 @@ resource "aws_iam_policy" "metrics_api_policy" {
 resource "aws_iam_role" "metrics_api_role" {
   name               = "metrics_api"
   assume_role_policy = data.aws_iam_policy_document.metrics_api_assume_role.json
-  inline_policy {}
   managed_policy_arns = [
     aws_iam_policy.metrics_api_policy.arn,
   ]
