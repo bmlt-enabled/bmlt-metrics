@@ -5,9 +5,11 @@ import urllib3
 import boto3
 from boto3.dynamodb.conditions import Key
 
-table = boto3.resource('dynamodb').Table(os.environ['DYNAMO_TABLE'])
+dynamo = boto3.resource('dynamodb')
+table = dynamo.Table(os.environ['DYNAMO_TABLE'])
+table_individual = dynamo.Table(os.environ['DYNAMO_TABLE_INDIVIDUAL'])
 current_date = datetime.today().strftime('%Y-%m-%d')
-
+current_date_hash = datetime.today().strftime('%Y%m%d')
 
 def bad_response(message):
     return {
@@ -34,6 +36,17 @@ def logger_handler(event, context):
         num_groups += root['num_groups']
         num_regions += root['num_regions']
         num_meetings += root['num_meetings']
+        table_individual.put_item(Item={
+            'id' : current_date_hash + str(root['source_id']),
+            'date': current_date,
+            'name': root['name'],
+            'source_id': str(root['source_id']),
+            'num_zones': str(root['num_zones']),
+            'num_areas': str(root['num_areas']),
+            'num_groups': str(root['num_groups']),
+            'num_regions': str(root['num_regions']),
+            'num_meetings': str(root['num_meetings'])
+        })
 
     table.put_item(Item={
         'date': current_date,

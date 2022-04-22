@@ -26,6 +26,7 @@ resource "aws_lambda_function" "metrics_logger" {
   environment {
     variables = {
       DYNAMO_TABLE = aws_dynamodb_table.metrics.name
+      DYNAMO_TABLE_INDIVIDUAL = aws_dynamodb_table.individual_metrics.name
     }
   }
 
@@ -89,7 +90,7 @@ data "aws_iam_policy_document" "metrics_logger_policy" {
   statement {
     effect    = "Allow"
     actions   = ["DynamoDB:PutItem"]
-    resources = [aws_dynamodb_table.metrics.arn]
+    resources = [aws_dynamodb_table.metrics.arn, aws_dynamodb_table.individual_metrics.arn]
   }
 }
 
@@ -110,6 +111,22 @@ resource "aws_dynamodb_table" "metrics" {
 
   tags = {
     Name = "bmlt-metrics"
+  }
+}
+
+resource "aws_dynamodb_table" "individual_metrics" {
+  name           = "individual-metrics-logger"
+  read_capacity  = 5
+  write_capacity = 5
+  hash_key       = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  tags = {
+    Name = "bmlt-individual-metrics"
   }
 }
 
