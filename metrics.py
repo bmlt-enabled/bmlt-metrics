@@ -25,27 +25,33 @@ def bad_response(message):
 
 
 def logger_handler(event, context):
-    num_zones = num_regions = num_areas = num_meetings = num_groups = 0
+    num_zones = num_regions = num_areas = num_meetings = num_groups = num_in_person = num_virtual = num_hybrid = 0
     req = urllib3.PoolManager().request(
         "GET", 'https://tomato.bmltenabled.org/rest/v1/rootservers/')
     root_servers = json.loads(req.data.decode())
 
-    for root in root_servers:
-        num_zones += root['num_zones']
-        num_areas += root['num_areas']
-        num_groups += root['num_groups']
-        num_regions += root['num_regions']
-        num_meetings += root['num_meetings']
+    for root in root_servers['statistics']:
+        num_zones += root['serviceBodies']['numZones']
+        num_areas += root['serviceBodies']['numAreas']
+        num_groups += root['serviceBodies']['numGroups']
+        num_regions += root['serviceBodies']['numRegions']
+        num_meetings += root['meetings']['numTotal']
+        num_in_person += root['meetings']['numInPerson']
+        num_virtual += root['meetings']['numVirtual']
+        num_hybrid += root['meetings']['numHybrid']
         table_individual.put_item(Item={
-            'id' : current_date_hash + str(root['source_id']),
+            'id' : current_date_hash + str(root['sourceId']),
             'date': current_date,
             'name': root['name'],
-            'source_id': str(root['source_id']),
-            'num_zones': str(root['num_zones']),
-            'num_areas': str(root['num_areas']),
-            'num_groups': str(root['num_groups']),
-            'num_regions': str(root['num_regions']),
-            'num_meetings': str(root['num_meetings'])
+            'source_id': str(root['sourceId']),
+            'num_zones': str(root['serviceBodies']['numZones']),
+            'num_areas': str(root['serviceBodies']['numAreas']),
+            'num_groups': str(root['serviceBodies']['numGroups']),
+            'num_regions': str(root['serviceBodies']['numRegions']),
+            'num_meetings': str(root['meetings']['numMeetings']),
+            'num_in_person': str(root['meetings']['numInPerson']),
+            'num_virtual': str(root['meetings']['numVirtual']),
+            'num_hybrid': str(root['meetings']['numHybrid'])
         })
 
     table.put_item(Item={
@@ -54,7 +60,10 @@ def logger_handler(event, context):
         'num_areas': str(num_areas),
         'num_groups': str(num_groups),
         'num_regions': str(num_regions),
-        'num_meetings': str(num_meetings)
+        'num_meetings': str(num_meetings),
+        'num_in_person': str(num_in_person),
+        'num_virtual': str(num_virtual),
+        'num_hybrid': str(num_hybrid)
     })
 
 
