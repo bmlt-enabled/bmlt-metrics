@@ -25,34 +25,34 @@ def bad_response(message):
 
 
 def logger_handler(event, context):
-        num_zones = num_regions = num_areas = num_meetings = num_groups = num_in_person = num_virtual = num_hybrid = 0
-        req = urllib3.PoolManager().request(
-            "GET", 'https://tomato.bmltenabled.org/main_server/api/v1/rootservers/')
-        root_servers = json.loads(req.data.decode())
+    num_zones = num_regions = num_areas = num_meetings = num_groups = num_in_person = num_virtual = num_hybrid = 0
+    req = urllib3.PoolManager().request(
+        "GET", 'https://tomato.bmltenabled.org/main_server/api/v1/rootservers/')
+    root_servers = json.loads(req.data.decode())
 
-        for root in root_servers:
-            num_zones += root['statistics']['serviceBodies']['numZones']
-            num_areas += root['statistics']['serviceBodies']['numAreas']
-            num_groups += root['statistics']['serviceBodies']['numGroups']
-            num_regions += root['statistics']['serviceBodies']['numRegions']
-            num_meetings += root['statistics']['meetings']['numTotal']
-            num_in_person += root['statistics']['meetings']['numInPerson']
-            num_virtual += root['statistics']['meetings']['numVirtual']
-            num_hybrid += root['statistics']['meetings']['numHybrid']
-            table_individual.put_item(Item={
-                'id' : current_date_hash + str(root['sourceId']),
-                'date': current_date,
-                'name': root['name'],
-                'source_id': str(root['sourceId']),
-                'num_zones': str(root['statistics']['serviceBodies']['numZones']),
-                'num_areas': str(root['statistics']['serviceBodies']['numAreas']),
-                'num_groups': str(root['statistics']['serviceBodies']['numGroups']),
-                'num_regions': str(root['statistics']['serviceBodies']['numRegions']),
-                'num_meetings': str(root['statistics']['meetings']['numTotal']),
-                'num_in_person': str(root['statistics']['meetings']['numInPerson']),
-                'num_virtual': str(root['statistics']['meetings']['numVirtual']),
-                'num_hybrid': str(root['statistics']['meetings']['numHybrid'])
-            })
+    for root in root_servers:
+        num_zones += root['statistics']['serviceBodies']['numZones']
+        num_areas += root['statistics']['serviceBodies']['numAreas']
+        num_groups += root['statistics']['serviceBodies']['numGroups']
+        num_regions += root['statistics']['serviceBodies']['numRegions']
+        num_meetings += root['statistics']['meetings']['numTotal']
+        num_in_person += root['statistics']['meetings']['numInPerson']
+        num_virtual += root['statistics']['meetings']['numVirtual']
+        num_hybrid += root['statistics']['meetings']['numHybrid']
+        table_individual.put_item(Item={
+            'id' : current_date_hash + str(root['sourceId']),
+            'date': current_date,
+            'name': root['name'],
+            'source_id': str(root['sourceId']),
+            'num_zones': str(root['statistics']['serviceBodies']['numZones']),
+            'num_areas': str(root['statistics']['serviceBodies']['numAreas']),
+            'num_groups': str(root['statistics']['serviceBodies']['numGroups']),
+            'num_regions': str(root['statistics']['serviceBodies']['numRegions']),
+            'num_meetings': str(root['statistics']['meetings']['numTotal']),
+            'num_in_person': str(root['statistics']['meetings']['numInPerson']),
+            'num_virtual': str(root['statistics']['meetings']['numVirtual']),
+            'num_hybrid': str(root['statistics']['meetings']['numHybrid'])
+        })
 
     table.put_item(Item={
         'date': current_date,
