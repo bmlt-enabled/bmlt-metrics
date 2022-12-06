@@ -48,7 +48,7 @@ def logger_handler(event, context):
             'num_areas': str(root['serviceBodies']['numAreas']),
             'num_groups': str(root['serviceBodies']['numGroups']),
             'num_regions': str(root['serviceBodies']['numRegions']),
-            'num_meetings': str(root['meetings']['numMeetings']),
+            'num_meetings': str(root['meetings']['numTotal']),
             'num_in_person': str(root['meetings']['numInPerson']),
             'num_virtual': str(root['meetings']['numVirtual']),
             'num_hybrid': str(root['meetings']['numHybrid'])
