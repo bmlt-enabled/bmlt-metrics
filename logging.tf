@@ -20,12 +20,12 @@ resource "aws_lambda_function" "metrics_logger" {
   role                           = aws_iam_role.metrics_logger.arn
   reserved_concurrent_executions = 1
   source_code_hash               = data.archive_file.metrics_lambda.output_base64sha256
-  runtime                        = "python3.8"
+  runtime                        = "python3.11"
   timeout                        = 30
 
   environment {
     variables = {
-      DYNAMO_TABLE = aws_dynamodb_table.metrics.name
+      DYNAMO_TABLE            = aws_dynamodb_table.metrics.name
       DYNAMO_TABLE_INDIVIDUAL = aws_dynamodb_table.individual_metrics.name
     }
   }
