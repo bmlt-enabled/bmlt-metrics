@@ -33,12 +33,6 @@ resource "aws_lambda_function" "metrics_logger" {
   tags = {
     Name = "bmlt-metrics-logging"
   }
-
-  lifecycle {
-    ignore_changes = [
-      last_modified
-    ]
-  }
 }
 
 resource "aws_lambda_permission" "bmlt_metrics_cloudwatch" {

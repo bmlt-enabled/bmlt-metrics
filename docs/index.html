@@ -85,73 +85,88 @@
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-    const currentDate = new Date()
     $(document).ready(function() {
-        $('#meetings').DataTable( {
-            "columnDefs": [
-                {"className": "dt-center", "targets": "_all"}
-            ],
-            "language": {
-                "search": "",
-                "searchPlaceholder": "Search"
-            },
-            "info" : false,
-            "scrollY": "400px",
-            "paging": false,
-            "scrollCollapse": true,
-            "ajax": {
+        const currentDate = new Date();
+        const startDate1 = '2021-06-28';
+        const endDate1 = '2024-02-28';
+        const startDate2 = '2024-02-29';
+        const endDate2 = currentDate.toISOString().split('T')[0];
+
+        function fetchData(startDate, endDate) {
+            return $.ajax({
                 url: "https://metrics.api.bmltenabled.org/metrics",
                 data: {
-                    'start_date' : '2021-06-28',
-                    'end_date' : currentDate.toISOString().split('T')[0],
+                    'start_date': startDate,
+                    'end_date': endDate
                 },
                 dataType: "json",
-                type: "GET",
-                "dataSrc": function (json) {
-                    let meeting_data = [];
-                    for(let i=0;i< json.length; i++){
-                        meeting_data.push({
-                            'date' : json[i].date,
-                            'num_meetings' : json[i].num_meetings,
-                            'num_groups': json[i].num_groups,
-                            'num_areas': json[i].num_areas,
-                            'num_regions': json[i].num_regions,
-                            'num_zones': json[i].num_zones
-                        })
-                    }
-                    meeting_data.sort((a, b) => (a.date > b.date) ? 1 : -1);
+                type: "GET"
+            });
+        }
 
-                    let trace1 = {
-                        x: [],
-                        y: [],
-                        mode: "lines",
-                        name: 'Meetings'
-                    };
+        function processMetricsData(data) {
+            return data.Items.map(item => ({
+                'date': item.date,
+                'num_meetings': item.num_meetings,
+                'num_groups': item.num_groups,
+                'num_areas': item.num_areas,
+                'num_regions': item.num_regions,
+                'num_zones': item.num_zones
+            }));
+        }
 
-                    let layout = {
-                        title: 'Total Meetings in Tomato',
-                        showlegend: true
-                    };
+        function processMeetingData(data) {
+            let meeting_data = data.flat();
+            meeting_data.sort((a, b) => (a.date > b.date) ? 1 : -1);
 
-                    meeting_data.forEach(function(val) {
-                        trace1.x.push(val["date"]);
-                        trace1.y.push(val["num_meetings"]);
-                    });
-                    Plotly.newPlot('plot', [trace1], layout, {scrollZoom: true});
+            let trace1 = {
+                x: meeting_data.map(val => val.date),
+                y: meeting_data.map(val => val.num_meetings),
+                mode: "lines",
+                name: 'Meetings'
+            };
 
-                    return meeting_data;
-                }
-            },
-            "columns": [
-                {'data': 'date'},
-                {'data': 'num_meetings'},
-                {'data': 'num_groups'},
-                {'data': 'num_areas'},
-                {'data': 'num_regions'},
-                {'data': 'num_zones'}
-            ]
-        } );
-    } );
+            let layout = {
+                title: 'Total Meetings in Tomato',
+                showlegend: true
+            };
+
+            Plotly.newPlot('plot', [trace1], layout, {scrollZoom: true});
+
+            return meeting_data;
+        }
+
+        const fetchDataPromises = [
+            fetchData(startDate1, endDate1).then(processMetricsData),
+            fetchData(startDate2, endDate2).then(processMetricsData)
+        ];
+
+        Promise.all(fetchDataPromises).then(results => {
+            const combinedData = results.flat();
+            $('#meetings').DataTable({
+                "columnDefs": [
+                    {"className": "dt-center", "targets": "_all"}
+                ],
+                "language": {
+                    "search": "",
+                    "searchPlaceholder": "Search"
+                },
+                "info": false,
+                "scrollY": "400px",
+                "paging": false,
+                "scrollCollapse": true,
+                "data": processMeetingData(combinedData),
+                "columns": [
+                    {'data': 'date'},
+                    {'data': 'num_meetings'},
+                    {'data': 'num_groups'},
+                    {'data': 'num_areas'},
+                    {'data': 'num_regions'},
+                    {'data': 'num_zones'}
+                ]
+            });
+        });
+    });
 </script>
 </body>
 </html>

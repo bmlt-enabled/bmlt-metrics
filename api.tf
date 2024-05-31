@@ -97,23 +97,25 @@ resource "aws_api_gateway_integration" "metrics_get" {
   credentials             = aws_iam_role.metrics_api_role.arn
   passthrough_behavior    = "WHEN_NO_TEMPLATES"
   request_templates = {
-    "application/json" = jsonencode({
-      TableName        = aws_dynamodb_table.metrics.name
-      FilterExpression = "#d BETWEEN :v1 AND :v2"
-      ExpressionAttributeValues = {
-        ":v1" = {
-          S = "$input.params('start_date')"
-        }
-        ":v2" = {
-          S = "$input.params('end_date')"
-        }
-      }
-      ExpressionAttributeNames = {
-        "#d" = "date"
-      }
-    })
+    "application/json" = <<EOF
+{
+  "TableName": "${aws_dynamodb_table.metrics.name}",
+  "FilterExpression": "#d BETWEEN :v1 AND :v2",
+  "ExpressionAttributeValues": {
+    ":v1": {"S": "$input.params('start_date')"},
+    ":v2": {"S": "$input.params('end_date')"}
+  },
+  "ExpressionAttributeNames": {
+    "#d": "date"
+  }
+  #if($input.params('ExclusiveStartKey') != "")
+    ,"ExclusiveStartKey": $util.parseJson($input.params('ExclusiveStartKey'))
+  #end
+}
+EOF
   }
 }
+
 
 resource "aws_api_gateway_method_response" "metrics_get_200" {
   rest_api_id = aws_api_gateway_rest_api.metrics_api.id
@@ -139,23 +141,27 @@ resource "aws_api_gateway_integration_response" "metrics_get" {
   response_templates = {
     "application/json" = <<EOF
 #set($inputRoot = $input.path('$'))
-[
-#foreach($elem in $inputRoot.Items)
-    {
+{
+  "Items": [
+    #foreach($elem in $inputRoot.Items)
+      {
         "date": "$elem.date.S",
         "num_zones": "$elem.num_zones.S",
         "num_regions": "$elem.num_regions.S",
         "num_areas": "$elem.num_areas.S",
         "num_groups": "$elem.num_groups.S",
         "num_meetings": "$elem.num_meetings.S"
-    }#if($foreach.hasNext),
-#end
-#end
-
-]
+      }#if($foreach.hasNext),#end
+    #end
+  ],
+  "Count": "$inputRoot.Count",
+  "ScannedCount": "$inputRoot.ScannedCount",
+  "LastEvaluatedKey": "$inputRoot.LastEvaluatedKey"
+}
 EOF
   }
 }
+
 
 ######################
 #  OPTIONS
