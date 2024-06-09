@@ -12,12 +12,36 @@
 	export let reloadPlot = 0;
 
 	let plotlyLib: any;
+	let plotNode: HTMLElement | null = null;
 
 	function init() {
 		if (!plotlyLib) plotlyLib = window.Plotly;
 	}
 
-	onMount(() => init());
+	onMount(() => {
+		const checkPlotlyLib = setInterval(() => {
+			if (window.Plotly) {
+				init();
+				clearInterval(checkPlotlyLib);
+				if (plotNode) {
+					generatePlot(plotNode, data, layout, config, reloadPlot);
+				}
+			}
+		}, 100);
+
+		const resizeListener = () => {
+			if (plotlyLib && plotNode) {
+				plotlyLib.Plots.resize(plotNode);
+			}
+		};
+
+		window.addEventListener('resize', resizeListener);
+
+		return () => {
+			clearInterval(checkPlotlyLib);
+			window.removeEventListener('resize', resizeListener);
+		};
+	});
 
 	const onHover = (d: unknown) => dispatch('hover', d);
 	const onUnhover = (d: unknown) => dispatch('unhover', d);
@@ -26,6 +50,8 @@
 	const onRelayout = (d: unknown) => dispatch('relayout', d);
 
 	const generatePlot = (node: HTMLElement, data: Array<Record<string, unknown>>, layout: Record<string, unknown>, config: Record<string, unknown>, reloadPlot: number) => {
+		if (!node || !plotlyLib) return;
+		plotNode = node;
 		return plotlyLib.newPlot(node, data, { ...layout }, { ...config }).then(() => {
 			(node as any).on('plotly_hover', onHover);
 			(node as any).on('plotly_unhover', onUnhover);
@@ -37,6 +63,7 @@
 	};
 
 	const updatePlot = (node: HTMLElement, data: Array<Record<string, unknown>>, layout: Record<string, unknown>, config: Record<string, unknown>, reloadPlot: number) => {
+		if (!node || !plotlyLib) return;
 		return plotlyLib.react(node, data, layout, config).then(() => {
 			console.debug('update plotly', data);
 			loaded = true;
