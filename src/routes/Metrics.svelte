@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { writable } from 'svelte/store';
-	import { DataHandler, Datatable, Th, ThFilter } from '@vincjo/datatables';
+	import { TableHandler, Datatable, ThSort, ThFilter } from '@vincjo/datatables';
 	import Plotly from '../lib/Plotly.svelte';
 	import { parseISO } from 'date-fns';
 
@@ -45,8 +45,7 @@
 	const startDate2 = '2024-03-25';
 	const endDate2 = currentDate.toISOString().split('T')[0];
 
-	const rows = writable<TransformedMetricItem[]>([]);
-	const handler = new DataHandler<TransformedMetricItem>([], { rowsPerPage: 10 });
+	const table = new TableHandler<TransformedMetricItem>([], { rowsPerPage: 10 });
 	const refreshPlot = writable(0);
 
 	function transformMetricsData(data: ApiResponse): TransformedMetricItem[] {
@@ -97,9 +96,9 @@
 		};
 	}
 
-	let plotData: { data: PlotData[] } = {
+	let plotData: { data: PlotData[] } = $state({
 		data: []
-	};
+	});
 
 	const plotLayout = {
 		title: 'Total Meetings in Aggregator',
@@ -114,11 +113,8 @@
 		try {
 			const dataPromises = [await fetchData(startDate1, endDate1), await fetchData(startDate2, endDate2)];
 			const combinedData = (await Promise.all(dataPromises)).flat();
-			handler.setRows(combinedData);
+			table.setRows(combinedData);
 			plotData = preparePlotData(combinedData);
-			handler.getRows().subscribe((processedRows: TransformedMetricItem[]) => {
-				rows.set(processedRows);
-			});
 			await tick();
 			refreshPlot.update((n) => n + 1);
 		} catch (error) {
@@ -131,28 +127,28 @@
 	});
 </script>
 
-<Datatable {handler}>
+<Datatable basic {table}>
 	<table class="dataTable">
 		<thead>
 			<tr>
-				<Th {handler} orderBy="date">Date</Th>
-				<Th {handler} orderBy="num_meetings">Number of Meetings</Th>
-				<Th {handler} orderBy="num_groups">Number of Groups</Th>
-				<Th {handler} orderBy="num_areas">Number of Areas</Th>
-				<Th {handler} orderBy="num_regions">Number of Regions</Th>
-				<Th {handler} orderBy="num_zones">Number of Zones</Th>
+				<ThSort {table} field="date">Date</ThSort>
+				<ThSort {table} field="num_meetings">Number of Meetings</ThSort>
+				<ThSort {table} field="num_groups">Number of Groups</ThSort>
+				<ThSort {table} field="num_areas">Number of Areas</ThSort>
+				<ThSort {table} field="num_regions">Number of Regions</ThSort>
+				<ThSort {table} field="num_zones">Number of Zones</ThSort>
 			</tr>
 			<tr>
-				<ThFilter {handler} filterBy="date" />
-				<ThFilter {handler} filterBy="num_meetings" />
-				<ThFilter {handler} filterBy="num_groups" />
-				<ThFilter {handler} filterBy="num_areas" />
-				<ThFilter {handler} filterBy="num_regions" />
-				<ThFilter {handler} filterBy="num_zones" />
+				<ThFilter {table} field="date" />
+				<ThFilter {table} field="num_meetings" />
+				<ThFilter {table} field="num_groups" />
+				<ThFilter {table} field="num_areas" />
+				<ThFilter {table} field="num_regions" />
+				<ThFilter {table} field="num_zones" />
 			</tr>
 		</thead>
 		<tbody>
-			{#each $rows as row}
+			{#each table.rows as row}
 				<tr>
 					<td>{row.date}</td>
 					<td>{row.num_meetings}</td>

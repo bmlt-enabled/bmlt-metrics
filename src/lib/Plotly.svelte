@@ -3,15 +3,22 @@
 
 	import { createEventDispatcher, onMount } from 'svelte';
 	const dispatch = createEventDispatcher();
-	// https://github.com/pjaudiomv/sveltekit-plotly
-	export let id: string = 'plot-' + Math.floor(Math.random() * 100).toString();
-	export let data: Array<Record<string, unknown>>;
-	export let layout: Record<string, unknown> = {};
-	export let config: Record<string, unknown> = {};
-	export let loaded: boolean = false;
-	export let reloadPlot = 0;
 
-	let plotlyLib: any;
+	interface Props {
+		// https://github.com/pjaudiomv/sveltekit-plotly
+		id?: string;
+		data: Array<Record<string, unknown>>;
+		layout?: Record<string, unknown>;
+		config?: Record<string, unknown>;
+		loaded?: boolean;
+		reloadPlot?: number;
+		children?: import('svelte').Snippet;
+		[key: string]: any;
+	}
+
+	let { id = 'plot-' + Math.floor(Math.random() * 100).toString(), data, layout = {}, config = {}, loaded = $bindable(false), reloadPlot = 0, children, ...rest }: Props = $props();
+
+	let plotlyLib: any = $state();
 	let plotNode: HTMLElement | null = null;
 
 	function init() {
@@ -91,11 +98,9 @@
 </script>
 
 <svelte:head>
-	<script src="https://cdn.plot.ly/plotly-2.12.1.min.js" on:load={init}></script>
+	<script src="https://cdn.plot.ly/plotly-2.12.1.min.js" onload={init}></script>
 </svelte:head>
 
 {#if plotlyLib}
-	<div {id} use:plotlyAction={{ data, layout, config, reloadPlot }} {...$$restProps} />
-{:else}
-	<slot>Loading Plotly</slot>
-{/if}
+	<div {id} use:plotlyAction={{ data, layout, config, reloadPlot }} {...rest}></div>
+{:else if children}{@render children()}{:else}Loading Plotly{/if}
