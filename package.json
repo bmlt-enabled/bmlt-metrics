@@ -37,5 +37,8 @@
 		"date-fns": "^4.0.0",
 		"plotly.js": "^2.33.0",
 		"plotly.js-dist": "^2.33.0"
+	},
+	"resolutions": {
+		"picomatch": "4.0.2"
 	}
 }
