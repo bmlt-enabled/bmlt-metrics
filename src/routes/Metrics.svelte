@@ -148,7 +148,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each table.rows as row}
+			{#each table.rows as row (row.id)}
 				<tr>
 					<td>{row.date}</td>
 					<td>{row.num_meetings}</td>
