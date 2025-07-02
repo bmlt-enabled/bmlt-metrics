@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
-	ssr: {
-		noExternal: ['@vincjo/datatables']
+	build: {
+		chunkSizeWarningLimit: 1000
 	}
 });

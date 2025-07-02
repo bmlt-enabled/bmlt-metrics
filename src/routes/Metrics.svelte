@@ -1,14 +1,13 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
-	import { writable } from 'svelte/store';
-	import { Table } from "@flowbite-svelte-plugins/datatable";
-	import { Chart } from "@flowbite-svelte-plugins/chart";
-	
-	import Plotly from '../lib/Plotly.svelte';
+	import { onMount } from 'svelte';
+	import { Table } from '@flowbite-svelte-plugins/datatable';
+	import { Chart } from '@flowbite-svelte-plugins/chart';
+	import type { ApexOptions } from 'apexcharts';
 	import { parseISO } from 'date-fns';
 
 	let items = $state<any[]>([]);
 	let isLoading = $state(true);
+	let chartRendered = $state(false);
 
 	interface MetricItem {
 		date: string;
@@ -35,21 +34,11 @@
 		num_zones: number;
 	}
 
-	interface PlotData extends Record<string, unknown> {
-		x: string[];
-		y: number[];
-		type: string;
-		mode: string;
-		name: string;
-		hoverinfo: string;
-	}
-
 	const currentDate = new Date();
 	const startDate1 = '2021-06-28';
 	const endDate1 = '2024-03-24';
 	const startDate2 = '2024-03-25';
 	const endDate2 = currentDate.toISOString().split('T')[0];
-	const refreshPlot = writable(0);
 
 	function transformMetricsData(data: ApiResponse): TransformedMetricItem[] {
 		return data.Items.map((item) => ({
@@ -78,7 +67,6 @@
 
 			const data: ApiResponse = await response.json();
 			items = [...items, ...data.Items];
-			console.log(items);
 			return transformMetricsData(data);
 		} catch (error) {
 			console.error('Error in fetchData:', error);
@@ -86,41 +74,151 @@
 		}
 	}
 
-	function preparePlotData(data: TransformedMetricItem[]): { data: PlotData[] } {
-		return {
-			data: [
-				{
-					x: data.map((item) => item.date),
-					y: data.map((item) => item.num_meetings),
-					type: 'scatter',
-					mode: 'lines',
-					name: 'Meetings',
-					hoverinfo: 'x+y'
-				}
-			]
-		};
+	function sampleData(data: TransformedMetricItem[], maxPoints = 100): TransformedMetricItem[] {
+		if (data.length <= maxPoints) return data;
+
+		const step = Math.ceil(data.length / maxPoints);
+		const sampled: TransformedMetricItem[] = [];
+
+		for (let i = 0; i < data.length; i += step) {
+			sampled.push(data[i]);
+		}
+
+		if (sampled[sampled.length - 1] !== data[data.length - 1]) {
+			sampled.push(data[data.length - 1]);
+		}
+
+		return sampled;
 	}
 
-	let plotData: { data: PlotData[] } = $state({
-		data: []
+	let chartOptions = $state<ApexOptions>({
+		chart: {
+			height: '400px',
+			type: 'line',
+			fontFamily: 'Inter, sans-serif',
+			animations: {
+				enabled: false
+			},
+			zoom: {
+				enabled: false
+			},
+			toolbar: {
+				show: true,
+				tools: {
+					download: true,
+					selection: false,
+					zoom: false,
+					zoomin: false,
+					zoomout: false,
+					pan: false,
+					reset: false
+				}
+			}
+		},
+		tooltip: {
+			enabled: true,
+			shared: false,
+			intersect: false,
+			x: {
+				show: true
+			}
+		},
+		dataLabels: {
+			enabled: false
+		},
+		stroke: {
+			width: 2,
+			curve: 'smooth'
+		},
+		grid: {
+			show: true,
+			strokeDashArray: 4,
+			padding: {
+				left: 5,
+				right: 5,
+				top: 10
+			}
+		},
+		series: [
+			{
+				name: 'Meetings',
+				data: [],
+				color: '#1A56DB'
+			}
+		],
+		legend: {
+			show: true
+		},
+		xaxis: {
+			categories: [],
+			labels: {
+				show: true,
+				style: {
+					fontFamily: 'Inter, sans-serif',
+					cssClass: 'text-xs font-normal fill-gray-500 dark:fill-gray-400'
+				},
+				rotateAlways: false,
+				hideOverlappingLabels: true,
+				maxHeight: 120
+			},
+			tickAmount: 10,
+			axisBorder: {
+				show: false
+			},
+			axisTicks: {
+				show: false
+			}
+		},
+		yaxis: {
+			title: {
+				text: 'Number of Meetings'
+			},
+			labels: {
+				minWidth: 20,
+				maxWidth: 70
+			}
+		},
+		title: {
+			text: 'Total Meetings in Aggregator',
+			align: 'center'
+		},
+		markers: {
+			size: 0
+		},
+		noData: {
+			text: 'Loading data...'
+		}
 	});
 
-	const plotLayout = {
-		title: 'Total Meetings in Aggregator',
-		showlegend: true
-	};
+	function updateChartOptions(data: TransformedMetricItem[]): void {
+		const processedData = sampleData(data);
 
-	const plotConfig = {
-		scrollZoom: true
-	};
+		const dates = processedData.map((item) => item.date);
+		const meetings = processedData.map((item) => item.num_meetings);
+
+		chartOptions = {
+			...chartOptions,
+			series: [
+				{
+					name: 'Meetings',
+					data: meetings,
+					color: '#1A56DB'
+				}
+			],
+			xaxis: {
+				...chartOptions.xaxis,
+				categories: dates
+			}
+		};
+
+		chartRendered = true;
+	}
 
 	async function loadData() {
 		try {
 			const dataPromises = [await fetchData(startDate1, endDate1), await fetchData(startDate2, endDate2)];
 			const combinedData = (await Promise.all(dataPromises)).flat();
-			plotData = preparePlotData(combinedData);
-			await tick();
-			refreshPlot.update((n) => n + 1);
+			updateChartOptions(combinedData);
 		} catch (error) {
 			console.error('Error in loadData:', error);
 		} finally {
@@ -139,23 +237,8 @@
 	<Table {items} />
 {/if}
 
-
-{#if $refreshPlot}
-	<Plotly data={plotData.data} layout={plotLayout} config={plotConfig} />
+{#if chartRendered}
+	<div class="w-full mt-8">
+		<Chart options={chartOptions} class="h-96" />
+	</div>
 {/if}
-
-<style>
-	thead {
-		background: #fff;
-	}
-	tbody td {
-		border: 1px solid #f5f5f5;
-		padding: 4px 20px;
-	}
-	tbody tr {
-		transition: all, 0.2s;
-	}
-	tbody tr:hover {
-		background: #f5f5f5;
-	}
-</style>
