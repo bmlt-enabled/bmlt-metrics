@@ -1,9 +1,14 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { writable } from 'svelte/store';
-	import { TableHandler, Datatable, ThSort, ThFilter } from '@vincjo/datatables';
+	import { Table } from "@flowbite-svelte-plugins/datatable";
+	import { Chart } from "@flowbite-svelte-plugins/chart";
+	
 	import Plotly from '../lib/Plotly.svelte';
 	import { parseISO } from 'date-fns';
+
+	let items = $state<any[]>([]);
+	let isLoading = $state(true);
 
 	interface MetricItem {
 		date: string;
@@ -44,8 +49,6 @@
 	const endDate1 = '2024-03-24';
 	const startDate2 = '2024-03-25';
 	const endDate2 = currentDate.toISOString().split('T')[0];
-
-	const table = new TableHandler<TransformedMetricItem>([], { rowsPerPage: 10 });
 	const refreshPlot = writable(0);
 
 	function transformMetricsData(data: ApiResponse): TransformedMetricItem[] {
@@ -74,6 +77,8 @@
 			}
 
 			const data: ApiResponse = await response.json();
+			items = [...items, ...data.Items];
+			console.log(items);
 			return transformMetricsData(data);
 		} catch (error) {
 			console.error('Error in fetchData:', error);
@@ -113,12 +118,13 @@
 		try {
 			const dataPromises = [await fetchData(startDate1, endDate1), await fetchData(startDate2, endDate2)];
 			const combinedData = (await Promise.all(dataPromises)).flat();
-			table.setRows(combinedData);
 			plotData = preparePlotData(combinedData);
 			await tick();
 			refreshPlot.update((n) => n + 1);
 		} catch (error) {
 			console.error('Error in loadData:', error);
+		} finally {
+			isLoading = false;
 		}
 	}
 
@@ -127,40 +133,12 @@
 	});
 </script>
 
-<Datatable basic {table}>
-	<table class="dataTable">
-		<thead>
-			<tr>
-				<ThSort {table} field="date">Date</ThSort>
-				<ThSort {table} field="num_meetings">Number of Meetings</ThSort>
-				<ThSort {table} field="num_groups">Number of Groups</ThSort>
-				<ThSort {table} field="num_areas">Number of Areas</ThSort>
-				<ThSort {table} field="num_regions">Number of Regions</ThSort>
-				<ThSort {table} field="num_zones">Number of Zones</ThSort>
-			</tr>
-			<tr>
-				<ThFilter {table} field="date" />
-				<ThFilter {table} field="num_meetings" />
-				<ThFilter {table} field="num_groups" />
-				<ThFilter {table} field="num_areas" />
-				<ThFilter {table} field="num_regions" />
-				<ThFilter {table} field="num_zones" />
-			</tr>
-		</thead>
-		<tbody>
-			{#each table.rows as row (row.date)}
-				<tr>
-					<td>{row.date}</td>
-					<td>{row.num_meetings}</td>
-					<td>{row.num_groups}</td>
-					<td>{row.num_areas}</td>
-					<td>{row.num_regions}</td>
-					<td>{row.num_zones}</td>
-				</tr>
-			{/each}
-		</tbody>
-	</table>
-</Datatable>
+{#if isLoading}
+	<p>Loading data...</p>
+{:else if items.length > 0}
+	<Table {items} />
+{/if}
+
 
 {#if $refreshPlot}
 	<Plotly data={plotData.data} layout={plotLayout} config={plotConfig} />
