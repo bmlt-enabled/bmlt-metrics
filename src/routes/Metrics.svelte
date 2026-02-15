@@ -242,3 +242,5 @@
 		<Chart options={chartOptions} class="h-96" />
 	</div>
 {/if}
+
+<p class="mt-4 mb-8 text-sm text-gray-500 dark:text-gray-400">Note: These metrics do not include Virtual NA.</p>
